@@ -1,0 +1,30 @@
+stages:
+  - helm_deploy
+
+variables:
+  ns: abarbyshev
+  kapp: k8s-pig-app
+
+stg_helm_deploy:
+  stage: helm_deploy
+  image: alpine:latest
+  before_script:
+    - apk add helm kubectl
+    - mkdir -p ~/.kube
+    - chmod 755 ~/.kube
+    - cat ${k8s_config} > ~/.kube/config
+    - chmod 600 ~/.kube/config
+    - kubectl config set-context --current --namespace=default
+    - >
+      if kubectl get namespace "${ns}" &> /dev/null; then
+        echo "Namespace ${ns} already exists"
+      else
+        kubectl create namespace "${ns}"
+        echo "Namespace ${ns} created successfully"
+      fi
+  script:
+    - echo "Scaling Deployment ${kapp} from previous homework to 5"
+    - kubectl scale deploy/${kapp} --replicas=5 -n ${ns}
+    - echo "Deploying to k8s ${ns} by Helm chart has started"
+    - helm install helmpig . -f values.yaml -n ${ns}
+    - echo "Deploying to k8s ${ns} by Helm chart has finished"

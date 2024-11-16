@@ -1,0 +1,12 @@
+replicaCount: 1
+
+resources: {}
+limits:
+  cpu: 800m
+  memory: 1Gi
+requests:
+  cpu: 800m
+  memory: 2Gi
+
+autoscaling:
+  enabled: false

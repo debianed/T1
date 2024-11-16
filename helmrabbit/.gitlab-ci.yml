@@ -1,0 +1,45 @@
+stages:
+    - deploy
+
+variables:
+    ns: abarbyshev
+
+stg_manifest:
+    stage: deploy
+    when: manual
+    image: alpine:latest
+    before_script:
+        - apk add kubectl
+        - mkdir -p ~/.kube
+        - chmod 755 ~/.kube
+        - cat ${k8s_config} > ~/.kube/config
+        - chmod 644 ~/.kube/config
+        - if [ "$(kubectl get customresourcedefinitions.apiextensions.k8s.io | grep rabbitmqclusters.rabbitmq.com)" == "" ]; then echo "You need to install RabbitMQ Cluster Kubernetes Operator"; exit 1; fi
+    script:
+        - echo "Deploying to k8s ${ns} has started"
+        - kubectl config set-context --current --namespace=${ns}
+        - echo "Install local-path-provisioner, since without it, the installation of RabbitMQ will be in the Pending state"
+        - kubectl apply -f https://raw.githubusercontent.com/rancher/local-path-provisioner/master/deploy/local-path-storage.yaml
+        - kubectl annotate storageclass local-path storageclass.kubernetes.io/is-default-class=true
+        - echo "Install RabbitMQ Cluster using manifest"
+        - kubectl apply -f ./manifests/rabbitmq.yml
+
+stg_helm:
+    stage: deploy
+    when: manual
+    image: alpine:latest
+    before_script:
+        - apk add helm kubectl
+        - mkdir -p ~/.kube
+        - chmod 755 ~/.kube
+        - cat ${k8s_config} > ~/.kube/config
+        - chmod 600 ~/.kube/config
+        - if [ "$(kubectl get customresourcedefinitions.apiextensions.k8s.io | grep rabbitmqclusters.rabbitmq.com)" == "" ]; then echo "You need to install RabbitMQ Cluster Kubernetes Operator"; exit 1; fi
+    script:
+        - echo "Deploying to k8s ${ns} by Helm chart has started"
+        - echo "Install local-path-provisioner, since without it, the installation of RabbitMQ will be in the Pending state"
+        - kubectl apply -f https://raw.githubusercontent.com/rancher/local-path-provisioner/master/deploy/local-path-storage.yaml
+        - kubectl annotate storageclass local-path storageclass.kubernetes.io/is-default-class=true        
+        - echo "Install RabbitMQ Cluster using Helm chart"
+        - helm upgrade -i helmrabbit . -f values.yaml -n ${ns}
+        

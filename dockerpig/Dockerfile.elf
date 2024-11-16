@@ -1,0 +1,14 @@
+FROM alpine:latest
+
+RUN apk add libc6-compat
+RUN mkdir /app
+RUN mkdir /app/resources
+WORKDIR /app
+
+COPY ./pig .
+COPY ./resources/index.html ./resources/
+
+EXPOSE 8000
+
+RUN ["chmod", "+x", "/app/pig"]
+CMD ["/app/pig"]

@@ -1,0 +1,12 @@
+apiVersion: rabbitmq.com/v1beta1
+kind: RabbitmqCluster
+metadata:
+  name: {{ include "tmp.fullname" . }}
+  labels:
+    {{- include "tmp.labels" . | nindent 4 }}
+spec:
+  {{- if not .Values.autoscaling.enabled }}
+  replicas: {{ .Values.replicaCount }}
+  {{- end }}
+  resources:
+  {{- toYaml .Values.resources | nindent 12 }}

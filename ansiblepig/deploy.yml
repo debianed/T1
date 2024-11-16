@@ -1,0 +1,27 @@
+---
+- name: Deploy Pig application
+  hosts: all
+  vars:
+    user: student
+    pig_files:
+      - ./pig
+      - ./resources
+    dest_dir: /home/student/barbyshev
+
+  tasks:
+    - name: Create dir for Pig application
+      ansible.builtin.file:
+        path: "{{ dest_dir }}"
+        state: directory
+        owner: "{{ user }}"
+        group: "{{ user }}"
+        mode: '0750'
+
+    - name: Deploy Pig application
+      ansible.builtin.copy:
+        src: "{{ item }}"
+        dest: "{{ dest_dir }}"
+        owner: "{{ user }}"
+        group: "{{ user }}"
+        mode: '0750'
+      loop: "{{ pig_files }}"

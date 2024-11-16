@@ -1,0 +1,29 @@
+stages:
+  - k8s_deploy
+
+variables:
+  ns: abarbyshev
+
+stg_k8s_deploy:
+  stage: k8s_deploy
+  image: alpine:latest
+  before_script:
+    - apk add kubectl
+    - mkdir -p ~/.kube
+    - chmod 755 ~/.kube
+    - cat ${k8s_config} > ~/.kube/config
+    - chmod 644 ~/.kube/config
+    - kubectl config set-context --current --namespace=default
+    - >
+      if kubectl get namespace "${ns}" &> /dev/null; then
+        echo "Namespace ${ns} already exists"
+      else
+        kubectl create namespace "${ns}"
+        echo "Namespace ${ns} created successfully"
+      fi
+  script:
+    - echo "Deploying to k8s ${ns} has started"
+    - kubectl config set-context --current --namespace=${ns}
+    - kubectl apply -f ./manifests/deployment.yml
+    - kubectl apply -f ./manifests/service.yml
+    - kubectl get pods

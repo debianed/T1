@@ -1,0 +1,20 @@
+stages:
+    - build
+    - test
+
+stg_build:
+    stage: build
+    image: golang:1.16.15
+    script:
+        - echo "Build stage has started"
+        - go build
+    artifacts:
+        paths:
+            - ./pig
+
+stg_test:
+    stage: test
+    image: golang:1.16.15
+    script:
+        - echo "Test stage has started"
+        - go test ./...

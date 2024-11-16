@@ -1,0 +1,66 @@
+stages:
+    - build
+    - package
+    - test
+
+variables:
+    TAG_COMMIT_ELF: ${CI_REGISTRY_IMAGE}:elf-${CI_COMMIT_SHORT_SHA}
+    TAG_COMMIT_SRC: ${CI_REGISTRY_IMAGE}:src-${CI_COMMIT_SHORT_SHA}
+    TAG_COMMIT_LATEST: ${CI_REGISTRY_IMAGE}:latest
+
+stg_build:
+    stage: build
+    image: golang:1.16.15
+    script:
+        - echo "Build stage has started"
+        - go build
+    artifacts:
+        paths:
+            - ./pig
+            - resources/
+
+stg_package_elf:
+    stage: package
+    when: on_success
+    needs:
+        - job: stg_build
+          artifacts: true
+    image: docker:stable
+    services:
+        - name: docker:stable-dind
+    script:
+        - echo "Docker from elf build stage has started"
+        - docker build -f Dockerfile.elf -t ${TAG_COMMIT_ELF} .
+        - docker save ${TAG_COMMIT_ELF} -o pig-elf.tar.gz
+        - echo "${CI_REGISTRY_PASSWORD}" | docker login ${CI_REGISTRY} -u ${CI_REGISTRY_USER} --password-stdin
+        - docker push ${TAG_COMMIT_ELF}
+        - docker logout ${CI_REGISTRY}
+    artifacts:
+        paths:
+            - pig-elf.tar.gz
+
+stg_package_source:    
+    stage: package
+    when: on_success
+    image: docker:stable
+    services:
+        - name: docker:stable-dind
+    script:
+        - echo "Docker from source build stage has started"
+        - docker build -t ${TAG_COMMIT_SRC} -t ${TAG_COMMIT_LATEST} .
+        - docker save ${TAG_COMMIT_SRC} -o pig-src.tar.gz
+        - echo "${CI_REGISTRY_PASSWORD}" | docker login ${CI_REGISTRY} -u ${CI_REGISTRY_USER} --password-stdin 
+        - docker push ${TAG_COMMIT_SRC}
+        - docker push ${TAG_COMMIT_LATEST}
+        - docker logout ${CI_REGISTRY}
+    artifacts:
+        paths:
+            - pig-src.tar.gz
+
+stg_test:
+    stage: test
+    when: on_success
+    image: golang:1.16.15
+    script:
+        - echo "Test stage has started"
+        - go test ./...

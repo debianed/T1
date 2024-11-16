@@ -1,0 +1,23 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: k8s-pig-app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: k8s-pig-app
+  template:
+    metadata:
+      labels:
+        app: k8s-pig-app
+    spec:
+      containers:
+      - name: k8s-pig-app
+        image: sion2k/pig:t1-k8s
+        ports:
+        - containerPort: 8000
+        resources:
+          limits:
+            cpu: 0.2m
+            memory: 30Mi

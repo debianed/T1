@@ -1,0 +1,30 @@
+stages:
+  - pgsql_deploy
+
+variables:
+  ns: abarbyshev
+
+stg_k8s_pg_deploy:
+  stage: pgsql_deploy
+  image: alpine:latest
+  before_script:
+    - apk add kubectl
+    - mkdir -p ~/.kube
+    - chmod 755 ~/.kube
+    - cat ${k8s_config} > ~/.kube/config
+    - chmod 644 ~/.kube/config
+    - kubectl config set-context --current --namespace=default
+    - >
+      if kubectl get namespace "${ns}" &> /dev/null; then
+        echo "Namespace ${ns} already exists"
+      else
+        kubectl create namespace "${ns}"
+        echo "Namespace ${ns} created successfully"
+      fi
+  script:
+    - echo "Deploying to k8s ${ns} has started"
+    - kubectl config set-context --current --namespace=${ns}
+    - kubectl apply -f ./manifests/secret.yml
+    - kubectl apply -f ./manifests/config.yml
+    - kubectl apply -f ./manifests/master.yml
+    - kubectl apply -f ./manifests/replica.yml    
